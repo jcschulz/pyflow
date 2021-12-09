@@ -34,10 +34,17 @@ pyflow
 ======
 
 
-    Add a short description here!
+    Numerical methods for conservation equations.
 
 
-A longer description of your project goes here...
+**pyflow** was developed as an educational resource to provide a general
+introduction to numerical methods for one-dimensional conservation laws.
+
+-------------
+Installation
+-------------
+
+The most recent version of The recommended way to install **pyflow** is to use
 
 
 .. _pyscaffold-notes:
