@@ -1,40 +1,34 @@
 import numpy as np
-import textwrap
+from abc import ABC, abstractmethod
 from typing import Optional
 import io
 
+from ..utils.header import write_header, wrap
 from .model import CaloricallyPerfectGas, Euler
 
-def write_header(s, name):
-    '''Prints a section header.'''
-    underline = '-'*80
-    s.write(f'\n{name}\n{underline}\n')
 
-def wrap(s, indent=-1, initial_indent=-1, width=-1):
-    '''Format a string of list of strings into a paragraph.'''
+class EulerQuasi1DProblem(ABC):
+    @abstractmethod
+    def geometry(self):
+        """Defines 1-D computational mesh."""
+        pass
 
-    if indent < 0:
-        indent = 0
+    @abstractmethod
+    def boundary_conditions(self):
+        """Returns a method defining the inflow/outflow boundary conditions for the Euler equations."""
+        pass
 
-    if initial_indent < 0:
-        initial_indent = indent
+    @abstractmethod
+    def initialize_primitives(self):
+        """Initialize the pressure, velocity, and density."""
+        pass
 
-    if width < 0:
-        width = 80
+    @abstractmethod
+    def model(self):
+        """Returns the thermodynamic state model."""
+        pass
 
-    if not isinstance(s,str):
-        s = ' '.join(s)
-
-    s = textwrap.fill(s.strip(),
-        width=80,
-        initial_indent = ' '*indent,
-        subsequent_indent = ' '*indent,
-        replace_whitespace = True,
-    )
-    s = ' '*initial_indent + s.lstrip()
-    return s
-
-class SupersonicInlet:
+class SupersonicInlet(EulerQuasi1DProblem):
 
     def __init__(self, Lx: float = 1.0, tan_theta:float = 0.25, inlet_area: float = 0.2, Rc:float = 0.5,
             Nx: int = 500, p0:float = 1.0e5, T0:float = 300.0, M0:float = 2.5, gamma: float = 1.4,
