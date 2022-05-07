@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.linalg import solve_banded
-from geometry import CircularAirfoil
+
+from .geometry import CircularAirfoil
 
 class MurmanCole():
 

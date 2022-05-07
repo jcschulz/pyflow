@@ -1,6 +1,7 @@
 import numpy as np
 
-from .model import PrimitiveState, CaloricallyPerfectGas
+from .euler_equations import PrimitiveState
+from .thermodynamic_model import CaloricallyPerfectGas
 
 class StarState:
     def __init__(self, left: PrimitiveState, right: PrimitiveState, Thermodynamics: CaloricallyPerfectGas):
@@ -214,4 +215,3 @@ class ExactRiemannSolver:
                     else:
                         # Sampled point is inside the rarefaction fan
                         return self.right_rarefaction(s)
-

@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.linalg import solve_banded
-from geometry import CircularAirfoil
+
+from .geometry import CircularAirfoil
 
 class EllipticSolver():
 
@@ -14,14 +15,19 @@ class EllipticSolver():
 
         self.phi = np.zeros((self.__mesh.Nx, self.__mesh.Ny))
         self.residual = np.zeros_like(self.phi)
+        self.u = np.zeros_like(self.phi)
+        self.v = np.zeros_like(self.phi)
+        self.M = np.zeros_like(self.phi)
+        self.p = np.zeros_like(self.phi)
+        self.cp = np.zeros_like(self.phi)
 
         self.M_inf = M_inf
         self.p_inf = p_inf
         self.rho_inf = rho_inf
         self.gamma = gamma
 
-        a_inf = np.sqrt(gamma * p_inf / rho_inf)
-        self.V_inf = self.M_inf * a_inf
+        self.a_inf = np.sqrt(gamma * p_inf / rho_inf)
+        self.V_inf = self.M_inf * self.a_inf
 
         self.symmetry_bc = np.zeros_like(self.__mesh.x)
         chord_start, chord_stop = self.__mesh.get_indices_of_airfoil()
@@ -36,23 +42,39 @@ class EllipticSolver():
         phi[0,:,0] = phi[0,:,1] - self.dy_min * self.V_inf * self.symmetry_bc
         return phi
 
+    # def get_solution(self):
+    #     u = np.zeros((self.__mesh.Nx, self.__mesh.Ny))
+    #     v = np.zeros((self.__mesh.Nx, self.__mesh.Ny))
+
+    #     dx = np.reshape(self.__mesh.x[2:] - self.__mesh.x[:-2], (self.__mesh.Nx-2,1))
+    #     u[1:-1,:] = (self.phi[2:,:] - self.phi[:-2,:]) / dx
+    #     u[0,:] = self.V_inf
+    #     u[-1,:] = u[-2,:]
+
+    #     v[:,1:-1] = (self.phi[:,2:] - self.phi[:,:-2]) / (self.__mesh.y[2:] - self.__mesh.y[:-2])
+    #     v[:,0] = 0.0
+    #     v[:,-1] = v[:,-2]
+
+    #     p = self.p_inf * (1.0 - 0.5 * (self.gamma - 1) * self.M_inf**2 * ((u**2 + v**2) / self.V_inf**2 - 1) )**(self.gamma / (self.gamma - 1))
+    #     cp = (p - self.p_inf) / (0.5 * self.rho_inf * self.V_inf**2)
+
+    #     return (u, v, p, cp)
+
     def get_solution(self):
-        u = np.zeros((self.__mesh.Nx, self.__mesh.Ny))
-        v = np.zeros((self.__mesh.Nx, self.__mesh.Ny))
+        dx = np.reshape(self.__mesh.x[1:-1] - self.__mesh.x[:-2], (self.__mesh.Nx-2,1))
+        self.u[1:-1,:] = (self.phi[1:-1,:] - self.phi[:-2,:]) / dx + self.V_inf
+        self.u[0,:] = self.V_inf
+        self.u[-1,:] = self.u[-2,:]
 
-        dx = np.reshape(self.__mesh.x[2:] - self.__mesh.x[:-2], (self.__mesh.Nx-2,1))
-        u[1:-1,:] = (self.phi[2:,:] - self.phi[:-2,:]) / dx
-        u[0,:] = self.V_inf
-        u[-1,:] = u[-2,:]
+        self.v[:,1:-1] = (self.phi[:,2:] - self.phi[:,:-2]) / (self.__mesh.y[2:] - self.__mesh.y[:-2])
+        self.v[:,0] = 0.0
+        self.v[:,-1] = self.v[:,-2]
 
-        v[:,1:-1] = (self.phi[:,2:] - self.phi[:,:-2]) / (self.__mesh.y[2:] - self.__mesh.y[:-2])
-        v[:,0] = 0.0
-        v[:,-1] = v[:,-2]
+        self.p = self.p_inf * (1.0 - 0.5 * (self.gamma - 1) * self.M_inf**2 * ((self.u**2 + self.v**2) / self.V_inf**2 - 1) )**(self.gamma / (self.gamma - 1))
+        self.cp = (self.p - self.p_inf) / (0.5 * self.rho_inf * self.V_inf**2)
 
-        p = self.p_inf * (1.0 - 0.5 * (self.gamma - 1) * self.M_inf**2 * ((u**2 + v**2) / self.V_inf**2 - 1) )**(self.gamma / (self.gamma - 1))
-        cp = (p - self.p_inf) / (0.5 * self.rho_inf * self.V_inf**2)
+        self.M = np.sqrt((self.u**2 + self.v**2)) / self.a_inf
 
-        return (u, v, p, cp)
 
     def solve(self, print_residuals=1, max_iterations=5000, max_residual=1.0e-5):
 
@@ -118,3 +140,4 @@ class EllipticSolver():
                 print(iterations, residual)
 
         self.phi = phi[0,:,:]
+        self.get_solution()
